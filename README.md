@@ -1,4 +1,4 @@
-creditor
-========
+in_trip
+=======
 
-creditor is a spider system for crawling credit discount info
+a spider for travel info
