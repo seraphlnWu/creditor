@@ -23,7 +23,7 @@ from twisted.application import service
 
 from observer.utils import wait
 from observer import log
-from observer.utils import TLSClientContextFactory  #FIXME not used now!
+from observer.utils import TLSClientContextFactory
 from observer.utils.twisted_utils import ReconnectingPBClientFactory
 from observer.node import BANANA_SIZE_LIMIT
 
@@ -47,7 +47,7 @@ class PBClientFactory(ReconnectingPBClientFactory):
 
 class ClientServiceBase(service.Service):
     '''
-        1. 向central节点注册
+        1. 向controller节点注册
         2. connectController连接控制节点并启动超时检查
         3. 如果超时那么回到1
         4. gotController取得控制节点后调用registerController向控制节点注册本节点
@@ -55,7 +55,7 @@ class ClientServiceBase(service.Service):
         6. 完成注册
     '''
 
-    controller_name = 'observer.sina.weibo.active_spider'
+    controller_name = ''
     servicename = None
     version_major = 1
     version_minor = 0
@@ -69,9 +69,8 @@ class ClientServiceBase(service.Service):
         self.controller_timeout = cfg.controller_timeout
         self.count = 0
 
-        self.node = None            #FIXME I need give the node as a good name
-        self.port = cfg.host_port   # not used
-        self.central_node = None
+        self.node = None
+        self.port = cfg.host_port
 
         self.host_name = cfg.host_name
         self.clientid = None
@@ -80,9 +79,6 @@ class ClientServiceBase(service.Service):
         self.controller_factory = None
         self.ready = False
         self._requests = []
-
-        self.controllerip = 'localhost'
-        self.controllerport = 6001
 
         self.max_slots = 10
         self.clients = {}
@@ -95,7 +91,6 @@ class ClientServiceBase(service.Service):
 
     def _clearLocal(self):
         ''' '''
-        self.central_node = None
         self.clientid = None
         self.controller = None
 
@@ -236,6 +231,7 @@ class ClientServiceBase(service.Service):
             log.error("Got error when register to controller " + str(message))
             self.controller_factory.disconnect()
 
+    @inlineCallbacks
     def connectController(self):
         ''' '''
         self.controller_factory = PBClientFactory(self.gotController)
@@ -261,76 +257,9 @@ class ClientServiceBase(service.Service):
             return d
 
     @inlineCallbacks
-    def registerCentralNode(self, centralnode):
-        ''' '''
-        try:
-            data = yield centralnode.callRemote(
-                'register',
-                self.servicename,
-                socket.gethostname(),
-                self.node,
-            )
-            (clientid, (controllerip, controllerport),  message) = data
-            self.clientid = clientid
-            self.controllerip = controllerip
-            self.controllerport = controllerport
-            self.central_node = centralnode
-
-        except Exception as msg:
-            log.error("Error when register to central.")
-            log.exception()
-            self._clearLocal()
-            returnValue(None)
-            return
-
-        returnValue(message)
-
-    @inlineCallbacks
-    def gotCentralNode(self, root):
-        ''' '''
-        self._clearController()
-
-        message = yield self.registerCentralNode(root)
-        if message == 'succeed':
-            if self.controller_name is None:
-                self.controller = self.central_node
-            else:
-                self.connectController()
-        elif message is not None:
-            log.error("Error when register to central node " + message)
-            self.central_factory.disconnect()
-
-    @inlineCallbacks
-    def connectCentralNode(self):
-        ''' '''
-        self.central_factory = PBClientFactory(self.gotController)
-        '''
-        reactor.connectTCP(
-            self.cfg.main_node_host,
-            self.cfg.main_node_port,
-            self.central_factory,
-        )
-        '''
-        reactor.connectTCP(
-            self.cfg.main_node_host,
-            self.cfg.main_node_port,
-            self.central_factory,
-        )
-
-        root = yield self.getController()
-        returnValue(root)
-
-    @inlineCallbacks
     def startService(self):
         ''' '''
-        # why root?
-        #root = yield self.connectController()
-        root = yield self.connectCentralNode()
-        #self.procLoop()
-        '''
-        for i in range(self.max_slots):
-            self.procLoop()
-        '''
+        root = yield self.connectController()
 
     @inlineCallbacks
     def stopService(self):
