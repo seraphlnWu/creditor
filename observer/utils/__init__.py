@@ -1,8 +1,7 @@
 # coding=utf8
 
 from cookielib import CookieJar
-from observer import log
-print CookieJar
+from observer.lib import log
 from twisted.internet import reactor, task, ssl
 from OpenSSL import SSL
 

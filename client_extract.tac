@@ -12,7 +12,7 @@ from twisted.web import client
 from observer.node.client import Client
 from observer.utils import getObject
 
-application = service.Application('Observer Users Active Spider Client')
+application = service.Application('Observer Creditor Active Spider Client')
 
 try:
     app_path = server_cfg.app_path
@@ -23,7 +23,7 @@ if app_path is None:
     app_path = os.path.split(__file__)[0]
     server_cfg.app_path = app_path
 
-NodeService = getObject('observer.platform.sina.weibo.users.extract_client.NodeService')
+NodeService = getObject('observer.platform.creditor.extract_client.NodeService')
 
 idx = 1
 nodeservice = NodeService(cfg=node_cfg)

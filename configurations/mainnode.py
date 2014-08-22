@@ -18,7 +18,7 @@ request_max_attempts = 1
 request_attempt_interval = 1000     # seconds
 
 versions = {
-    "observer.taobao.active_spider": ((1, 0), (1, 0)),
+    'observer.creditor.active_spider': ((1, 0), (1, 0)),
 }
 
 mongo_host = 'localhost'

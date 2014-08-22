@@ -22,7 +22,7 @@ from twisted.internet import reactor
 from twisted.application import service
 
 from observer.utils import wait
-from observer import log
+from observer.lib import log
 from observer.utils import TLSClientContextFactory
 from observer.utils.twisted_utils import ReconnectingPBClientFactory
 from observer.node import BANANA_SIZE_LIMIT

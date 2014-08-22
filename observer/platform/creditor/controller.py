@@ -16,12 +16,12 @@
 
 from twisted.internet import reactor, defer
 import time
-from creditor import log
-from creditor.node.controller import ControllerServiceBase
-from creditor.platform.taobao.config import SEARCH_TIMEOUT, TASK_QUEUE
-from creditor.platform.taobao.utils import check_duplicate, save_extract_ids
-from creditor.platform.taobao.models import save_statuses
-from creditor.platform.taobao.base_redis import RedisOp
+from observer.lib import log
+from observer.node.controller import ControllerServiceBase
+from observer.platform.taobao.config import SEARCH_TIMEOUT, TASK_QUEUE
+from observer.platform.taobao.utils import check_duplicate, save_extract_ids
+from observer.platform.taobao.models import save_statuses
+from observer.platform.taobao.base_redis import RedisOp
 
 ttype_mapper = {
     'extract': 'extract_queue',
@@ -32,7 +32,7 @@ ttype_mapper = {
 class ControllerService(ControllerServiceBase):
     ''' controller作为中心节点存在，目前负责调度以及管理 '''
 
-    servicename = 'observer.taobao.active_spider'
+    servicename = 'observer.creditor.active_spider'
 
     def __init__(self, *args, **kwargs):
         ''' '''
@@ -52,7 +52,7 @@ class ControllerService(ControllerServiceBase):
     def add_test_task(self):
         ''' '''
         value = 'http://pos.cmbchina.com/Shop/Search.aspx?citycode=%s&class=&subclass=&regionid=&ccid=&keyword=&pageno=%s'
-        self.redis.lpush('extract_queue', value)
+        self.redis.push_list_data('extract_queue', value)
 
     def get_prepared(self):
         ''' 爬虫中心节点启动之前的准备工作 '''

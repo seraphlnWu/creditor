@@ -17,9 +17,9 @@ from twisted.internet.defer import inlineCallbacks, returnValue
 
 from observer.utils.http import request, TimedAgentPool, InfiniteLoginError
 from observer.utils import wait
-from observer.platform.utils import getAgent
+from observer.platform.creditor.utils import getAgent
 from observer.node.client import ClientServiceBase
-from observer import log
+from observer.lib import log
 
 
 class NodeService(ClientServiceBase):

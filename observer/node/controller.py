@@ -24,7 +24,7 @@ from twisted.python import failure
 import twisted.spread.banana
 
 from observer.node import BANANA_SIZE_LIMIT
-from observer import log
+from observer.lib import log
 from observer.node.errors import UnknownService
 from observer.utils.twisted_utils import ReconnectingPBClientFactory
 
@@ -439,25 +439,25 @@ class ControllerNode(pb.Root):
         self.service = service
         service.node = self
 
-    def request(self, name, *args, **kwargs):
-        ''' '''
-        return self.service.remoteRequest(name, *args, **kwargs)
+    #def request(self, name, *args, **kwargs):
+    #    ''' '''
+    #    return self.service.remoteRequest(name, *args, **kwargs)
 
-    def remote_request(self, clientid, name, *args, **kwargs):
-        ''' '''
-        return self.service.clientPush(clientid, name, *args, **kwargs)
+    #def remote_request(self, clientid, name, *args, **kwargs):
+    #    ''' '''
+    #    return self.service.clientPush(clientid, name, *args, **kwargs)
 
-    def remote_pull(self, clientid):
-        ''' '''
-        return self.service.clientPull(clientid)
+    #def remote_pull(self, clientid):
+    #    ''' '''
+    #    return self.service.clientPull(clientid)
 
-    def remote_return(self, clientid, requestid, result):
-        ''' '''
-        return self.service.clientReturn(clientid, requestid, result)
+    #def remote_return(self, clientid, requestid, result):
+    #    ''' '''
+    #    return self.service.clientReturn(clientid, requestid, result)
 
-    def remote_users(self, clientid):
-        ''' '''
-        return self.service.getUsers(clientid)
+    #def remote_users(self, clientid):
+    #    ''' '''
+    #    return self.service.getUsers(clientid)
 
     def remote_register(
         self,
@@ -480,13 +480,9 @@ class ControllerNode(pb.Root):
         ''' '''
         return self.service.unregister(clientid)
 
-    def remote_getUser(self, clientid):
-        ''' '''
-        return self.service.getUser(clientid)
-
-    def remote_push(self, requestid, name, *args, **kwargs):
-        ''' '''
-        return self.service.clientPush(requestid, name, *args, **kwargs)
+    #def remote_push(self, requestid, name, *args, **kwargs):
+    #    ''' '''
+    #    return self.service.clientPush(requestid, name, *args, **kwargs)
 
     def remote_nextRequest(self, ttype):
         ''' '''

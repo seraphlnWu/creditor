@@ -3,8 +3,8 @@
 from ConfigParser import SafeConfigParser, NoOptionError
 from os.path import join, abspath, dirname
 
-from creditor.lib.singleton import Singleton
-from creditor.lib import log
+from observer.lib.singleton import Singleton
+from observer.lib import log
 
 
 class Config(object):

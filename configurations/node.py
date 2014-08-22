@@ -39,6 +39,24 @@ db_keywords_collection = 'key'
 min_priority = 1
 max_priority = 10
 
+controller_timeout=25
+
+prefix = '_spider' 
+http_proxy = None
+http_agent='Mozilla/5.0 (X11; Linux i686; rv:8.0) Gecko/20100101 Firefox/8.0'
+
+http_interval_min = 15.0
+http_interval_max = 25.0
+login_interval = 60.0
+max_agent = 1
+db_keywords_host = 'localhost'
+db_keywords_port = 27017
+db_keywords_dbname = 'sandbox_keywords'
+db_keywords_collection = 'key'
+
+min_priority = 1
+max_priority = 10
+
 keyword_freq_file = 'keywords_freq_file'
-feed_id_file = 'feed_id_file'
 keyword_file = ''
+

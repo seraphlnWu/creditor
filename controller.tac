@@ -18,7 +18,7 @@ import configurations.api as apicfg
 
 from twisted.conch.manhole_tap import Options, makeService
 
-application = service.Application('Observer Active Spider')
+application = service.Application('observer Active Spider')
 
 try:
     app_path = servercfg.app_path
@@ -29,7 +29,7 @@ if app_path is None:
     app_path = os.path.dirname(__file__)
     servercfg.app_path = app_path
 
-nodeservice = getObject('observer.platform.taobao.shop_controller.ControllerService')(cfg=nodecfg)
+nodeservice = getObject('observer.platform.creditor.controller.ControllerService')(cfg=nodecfg)
 mainnode = ControllerNode(nodeservice)
 
 internet.TCPServer(

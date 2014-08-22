@@ -24,7 +24,7 @@ from twisted.web.client import (
 )
 
 from observer.utils import wait
-from observer import log
+from observer.lib import log
 
 
 class HTTPRESTGetter(HTTPPageGetter):
