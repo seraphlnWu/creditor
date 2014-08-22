@@ -12,6 +12,7 @@ import os
 import json
 import time
 import socket
+import lxml.etree
 
 from twisted.internet.defer import inlineCallbacks, returnValue
 
@@ -72,6 +73,7 @@ class NodeService(ClientServiceBase):
         ''' '''
         needbreak = False
         while 1:
+            result = None
             if agent.remove:
                 self.agent_pool.removeAgent(agent)
                 break
@@ -84,12 +86,10 @@ class NodeService(ClientServiceBase):
             except InfiniteLoginError:
                 log.exception()
                 yield self.callController("fail", url=url)
-                result = None
                 needbreak = True
             except:
                 log.exception()
-                result = None
-            self.callController('sendResult', reqid, url, result)
+            self.callController('sendResult', reqid, url, json.dumps(result))
             if needbreak:
                 break
 
@@ -97,19 +97,53 @@ class NodeService(ClientServiceBase):
     @inlineCallbacks
     def getContent(self, agent, url):
         ''' get the target webpage '''
-        url = "%s%s" % (uid, SUFFIX)
+        city_code = "0010"
+        page = 1
+        url = url % (city_code, page)
         log.debug('Getting data with url: %s' % url)
         result = yield request(agent, url)
         returnValue(result)
 
+    @staticmethod
+    def parse_pages(el):
+        ''' '''
+        try:
+            mmc = el.xpath("./div[@class='page_header clearfix']")[0]
+            result = filter(lambda x: x.isdigit(), mmc.xpath('./div[@class="l_content"]/a/text()'))[-1]
+        except IndexError:
+            result = -1
+
+        return result
+
+    @staticmethod
+    def parse_shop_url(el):
+        try:
+            href = el.xpath("./td/a/@href")[0]
+        except IndexError:
+            href = ""
+
+        return href
+
+    @staticmethod
+    def parse_items(el):
+        ''' '''
+        items = el.xpath("//div[@class='page_item']")
+        infos = map(lambda x: x.xpath("./table/tbody/tr/td[2]/table[@class='shopinfo']/tr"), items)
+        hrefs = filter(lambda x: x, map(lambda x: NodeService.parse_shop_url(x[0]), infos))
+
+        return hrefs
+
     @inlineCallbacks
     def search(self, agent, url):
         ''' 获取商铺信息列表 '''
-        result = None
+        pages, hrefs = -1, []
         try:
             data = yield self.getContent(agent, url)
-            result = json.loads(data).get('ids')
+            el = lxml.etree.HTML(data)
+            mc = el.xpath("//div[@class='r_sub_box']/div[@class='middle_content']/div[@class='page_content clearfix']")[0]
+            pages = NodeService.parse_pages(mc)
+            hrefs = NodeService.parse_items(mc)
         except Exception as msg:
             log.debug("Got Something Wrong with url: %s Error: %s" % (url, repr(msg)))
 
-        returnValue(json.dumps(result))
+        returnValue((pages, json.dumps(hrefs)))
