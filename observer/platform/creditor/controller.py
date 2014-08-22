@@ -117,18 +117,18 @@ class ControllerService(ControllerServiceBase):
             now = time.time()
 
             try:
-                _, tid = self.redis.query_list_data(ttype_mapper[ttype])
+                _, task = self.redis.query_list_data(ttype_mapper[ttype])
             except TypeError:
                 log.error("There is no task in task queue")
-                _, tid = None, None
+                _, task = None, None
 
-            rid = self.newRequestId()
+            reqid = self.newRequestId()
             d = defer.Deferred()
             d.addCallback(self.gotResult,
-                          tid, ttype).addErrback(self.gotError, tid)
-            timeout = reactor.callLater(SEARCH_TIMEOUT, self.cancelSearch, rid)
-            self.search_defers[rid] = {'timeout': timeout, 'defer': d}
-            return (rid, tid)
+                          task, ttype).addErrback(self.gotError, task)
+            timeout = reactor.callLater(SEARCH_TIMEOUT, self.cancelSearch, reqid)
+            self.search_defers[reqid] = {'timeout': timeout, 'defer': d}
+            return (reqid, task)
 
     def cancelSearch(self, rid):
         ''' 当子节点执行任务出现异常时，调用该方法取消掉正在执行的任务 '''
