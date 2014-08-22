@@ -97,7 +97,7 @@ class NodeService(ClientServiceBase):
     @inlineCallbacks
     def getContent(self, agent, url):
         ''' get the target webpage '''
-        url = "%s%s" % (uid, SUFFIX)
+        #url = "%s%s" % (uid, SUFFIX)
         log.debug('Getting data with url: %s' % url)
         result = yield request(agent, url)
         returnValue(result)
@@ -108,6 +108,7 @@ class NodeService(ClientServiceBase):
         result = None
         try:
             data = yield self.getContent(agent, url)
+            import ipdb;ipdb.set_trace()
             result = json.loads(data).get('ids')
         except Exception as msg:
             log.debug("Got Something Wrong with url: %s Error: %s" % (url, repr(msg)))
