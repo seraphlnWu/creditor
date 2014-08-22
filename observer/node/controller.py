@@ -77,6 +77,7 @@ class ControllerServiceBase(service.Service):
         self.processing_queue = {}
 
         self.requestid = 1
+        self.taskid = 1
 
     def splitName(self, name):
         ''' split the given task name '''
@@ -96,6 +97,12 @@ class ControllerServiceBase(service.Service):
         reqid = self.requestid
         self.requestid += 1
         return reqid
+
+    def new_task_id(self):
+        ''' generate a new task id '''
+        tid = self.taskid
+        self.taskid += 1
+        return tid
 
     def clientRegisterTimeout(self, clientid):
         ''' '''

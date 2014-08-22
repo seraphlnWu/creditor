@@ -139,3 +139,9 @@ def save_statuses(statuses):
     finally:
         ufile.close()
         sfile.close()
+
+
+def save_tasks(redis_conn, tids):
+    ''' '''
+    for tid in tids:
+        redis_conn.push_list_data('task_queue', tids)

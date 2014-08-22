@@ -139,10 +139,15 @@ class NodeService(ClientServiceBase):
         pages, hrefs = -1, []
         try:
             data = yield self.getContent(agent, url)
+<<<<<<< HEAD
             el = lxml.etree.HTML(data)
             mc = el.xpath("//div[@class='r_sub_box']/div[@class='middle_content']/div[@class='page_content clearfix']")[0]
             pages = NodeService.parse_pages(mc)
             hrefs = NodeService.parse_items(mc)
+=======
+            import ipdb;ipdb.set_trace()
+            result = json.loads(data).get('ids')
+>>>>>>> 0a452f12324e9821d902a3c326bb7d86667b08d6
         except Exception as msg:
             log.debug("Got Something Wrong with url: %s Error: %s" % (url, repr(msg)))
 

@@ -14,14 +14,16 @@
 
 '''
 
-from twisted.internet import reactor, defer
 import time
+from twisted.internet import reactor, defer
 from observer.lib import log
+from observer.lib.tasks import BaseTask
+
 from observer.node.controller import ControllerServiceBase
-from observer.platform.taobao.config import SEARCH_TIMEOUT, TASK_QUEUE
-from observer.platform.taobao.utils import check_duplicate, save_extract_ids
-from observer.platform.taobao.models import save_statuses
-from observer.platform.taobao.base_redis import RedisOp
+from observer.platform.creditor.config import SEARCH_TIMEOUT, TASK_QUEUE
+from observer.platform.creditor.utils import check_duplicate, save_extract_ids
+from observer.platform.creditor.models import save_statuses, save_tasks
+from observer.platform.creditor.base_redis import RedisOp
 
 ttype_mapper = {
     'extract': 'extract_queue',
@@ -38,6 +40,7 @@ class ControllerService(ControllerServiceBase):
         ''' '''
         ControllerServiceBase.__init__(self, *args, **kwargs)
 
+        self.taskid = 0
         self.search_defers = {}
         self.redis = RedisOp()
 
@@ -51,8 +54,15 @@ class ControllerService(ControllerServiceBase):
 
     def add_test_task(self):
         ''' '''
-        value = 'http://pos.cmbchina.com/Shop/Search.aspx?citycode=%s&class=&subclass=&regionid=&ccid=&keyword=&pageno=%s'
-        self.redis.push_list_data('extract_queue', value)
+        tid = self.new_task_id()
+        tbody = {
+            'page': 1,        
+            'ccode': '0010',
+            'prefix': 'http://pos.cmbchina.com',
+            'suffix': '/Search.aspx?citycode=%s&class=&subclass=&regionid=&ccid=&keyword=&pageno=%s'
+        }
+        task = BaseTask(tid, tbody)
+        self.redis.push_list_data('extract_queue', json.dumps(value))
 
     def get_prepared(self):
         ''' 爬虫中心节点启动之前的准备工作 '''
@@ -74,10 +84,12 @@ class ControllerService(ControllerServiceBase):
             1. 商铺信息，需要抓取商铺的商品列表
             2. 商品信息，需要抓取商品的基本信息
         '''
+        # TODO refactor this
         if data:
             if ttype == 'extract':
+                page, hrefs = json.loads(data)
                 tids = check_duplicate(self.redis, data)
-                save_shop_info(self.redis, tids)
+                save_tasks(self.redis, tids)
             else:
                 save_items(data)
         else:
