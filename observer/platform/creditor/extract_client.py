@@ -10,10 +10,11 @@
 
 import os
 import json
+import cPickle
 import time
 import socket
 import lxml.etree
-from urllib2.urlparse import urljoin
+import urllib2
 
 from twisted.internet.defer import inlineCallbacks, returnValue
 
@@ -100,10 +101,10 @@ class NodeService(ClientServiceBase):
     @inlineCallbacks
     def getContent(self, agent, task):
         ''' download the target page '''
-        task = json.loads(task)
         tbody = task.tbody
 
-        req_url = urljoin(tbody.get('prefix'), tbody.get('suffix'))
+        req_url = urllib2.urlparse.urljoin(tbody.get('prefix'),
+                                           tbody.get('suffix'))
         url = req_url % (tbody.get('ccode'), tbody.get('page'))
         log.debug('Getting data with url: %s' % url)
         result = yield request(agent, url)
@@ -116,7 +117,7 @@ class NodeService(ClientServiceBase):
             mmc = el.xpath("./div[@class='page_header clearfix']")[0]
             result = filter(lambda x: x.isdigit(), mmc.xpath('./div[@class="l_content"]/a/text()'))[-1]
         except IndexError:
-            result = -1
+            result = -2
 
         return result
 
@@ -141,14 +142,15 @@ class NodeService(ClientServiceBase):
     @inlineCallbacks
     def search(self, agent, task):
         ''' 获取商铺信息列表 '''
-        pages, hrefs = -1, []
+        task = cPickle.loads(task)
+        pages, hrefs = -1, None
         try:
             data = yield self.getContent(agent, task)
             el = lxml.etree.HTML(data)
             mc = el.xpath("//div[@class='r_sub_box']/div[@class='middle_content']/div[@class='page_content clearfix']")[0]
             pages = NodeService.parse_pages(mc)
-            hrefs = NodeService.parse_items(mc)
+            hrefs = map(lambda x: urllib2.urlparse.urljoin(task.tbody.get('prefix'), x), NodeService.parse_items(mc))
         except Exception as msg:
-            log.debug("Got Something Wrong with url: %s Error: %s" % (url, repr(msg)))
+            log.debug("Got Something Wrong with url: %s Error: %s" % (repr(task), repr(msg)))
 
         returnValue((pages, json.dumps(hrefs)))
