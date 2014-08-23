@@ -14,6 +14,8 @@
 
 '''
 
+import json
+import cPickle
 import time
 from twisted.internet import reactor, defer
 from observer.lib import log
@@ -27,7 +29,7 @@ from observer.platform.creditor.base_redis import RedisOp
 
 ttype_mapper = {
     'extract': 'extract_queue',
-    'user': 'task_queue',
+    'data': 'task_queue',
 }
 
 
@@ -58,11 +60,11 @@ class ControllerService(ControllerServiceBase):
         tbody = {
             'page': 1,        
             'ccode': '0010',
-            'prefix': 'http://pos.cmbchina.com',
-            'suffix': '/Search.aspx?citycode=%s&class=&subclass=&regionid=&ccid=&keyword=&pageno=%s'
+            'prefix': 'http://pos.cmbchina.com/',
+            'suffix': '/Shop/Search.aspx?citycode=%s&class=&subclass=&regionid=&ccid=&keyword=&pageno=%s'
         }
         task = BaseTask(tid, tbody)
-        self.redis.push_list_data('extract_queue', json.dumps(value))
+        self.redis.push_list_data('extract_queue', cPickle.dumps(task))
 
     def get_prepared(self):
         ''' 爬虫中心节点启动之前的准备工作 '''
@@ -78,7 +80,7 @@ class ControllerService(ControllerServiceBase):
         '''
         pass
 
-    def gotResult(self, data, tid, ttype):
+    def gotResult(self, data, task, ttype):
         '''
             获取数据。任务分2种。
             1. 商铺信息，需要抓取商铺的商品列表
@@ -87,13 +89,30 @@ class ControllerService(ControllerServiceBase):
         # TODO refactor this
         if data:
             if ttype == 'extract':
-                page, hrefs = json.loads(data)
-                tids = check_duplicate(self.redis, data)
+                total_page, hrefs = json.loads(data)
+                total_page = int(total_page)
+                tids = check_duplicate(self.redis, hrefs)
                 save_tasks(self.redis, tids)
+                for h in hrefs:
+                    tmp_tid = self.new_task_id()
+                    tmp_tbody = {'task': h}
+                    tmp_task = BaseTask(tmp_tid, tmp_tbody)
+                    self.redis.push_list_data('task_queue', cPickle.dumps(tmp_task))
+
+                task = cPickle.loads(task)
+                page = task.tbody.get('page', 1)
+                if page == 1 and page < total_page:
+                    tmp_tbody = task.tbody
+                    for p in xrange(page, total_page):
+                        tmp_tid = self.new_task_id()
+                        tmp_tbody['page'] = p+1
+                        tmp_task = BaseTask(tmp_tid, tmp_tbody)
+                        self.redis.push_list_data('extract_queue', cPickle.dumps(tmp_task))
+
             else:
                 save_items(data)
         else:
-            log.debug('Got an invalid tid: %s when taking task: %s' % (tid, ttype))
+            log.debug('Got an invalid task: %s when taking task: %s' % (task, ttype))
 
     def sendResult(self, reqid, skid, result):
         ''' '''
