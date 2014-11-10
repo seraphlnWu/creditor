@@ -29,7 +29,7 @@ collection_name = 'accounts'
 userdb_idcollection = 'probe'
 userdb_collection = 'users'
 
-client_manhole_port = 8788
+client_manhole_port = 8789
 
 db_keywords_host = 'localhost'
 db_keywords_port = 27017

@@ -13,7 +13,8 @@ import json
 import time
 import socket
 import lxml.etree
-from urllib2.urlparse import urljoin
+import cPickle
+import urllib2
 
 from twisted.internet.defer import inlineCallbacks, returnValue
 
@@ -99,25 +100,104 @@ class NodeService(ClientServiceBase):
     @inlineCallbacks
     def getContent(self, agent, task):
         ''' download the target page '''
-        task = json.loads(task)
+        task = cPickle.loads(task)
+        #task = json.loads(task)
         tbody = task.tbody
 
         url = tbody.get('task')
         log.debug('Getting data with url: %s' % url)
 
         result = yield request(agent, url)
-        returnValue(result)
+        returnValue((result, tbody.get('prefix')))
 
     @inlineCallbacks
     def search(self, agent, task):
         ''' 获取商铺信息列表 '''
+        result = {}
         try:
-            data = yield self.getContent(agent, task)
+            data, url = yield self.getContent(agent, task)
             el = lxml.etree.HTML(data)
-            mc = el.xpath("//div[@class='r_sub_box']/div[@class='middle_content']/div[@class='page_content clearfix']")[0]
-            pages = NodeService.parse_pages(mc)
-            hrefs = NodeService.parse_items(mc)
-        except Exception as msg:
-            log.debug("Got Something Wrong with url: %s Error: %s" % (url, repr(msg)))
+            #mc = el.xpath("//div[@class='r_sub_box']/div[@class='middle_content']/div[@class='page_content clearfix']")[0]
+            mc = el.xpath("//div[@class='r_sub_box']/div[@class='content_detail']")
+            try:
+                basic_info = NodeService.parse_basic_info(mc[0])
+            except IndexError:
+                basic_info = {}
+            try:
+                intro_info = NodeService.parse_intro_info(mc[1])
+            except IndexError:
+                intro_info = {}
+            try:
+                extra_info = NodeService.parse_extra_info(mc[2])
+                for u in extra_info['extra']:
+                    u['link'] = urllib2.urlparse.urljoin(url, u['link'])
+            except IndexError:
+                extra_info = {}
 
-        returnValue((pages, json.dumps(hrefs)))
+            result.update(basic_info)
+            result.update(intro_info)
+            result.update(extra_info)
+        except Exception as msg:
+            log.debug("Got Something Wrong with Task: %s Error: %s" % (repr(task), repr(msg)))
+
+        returnValue(result)
+
+
+    @staticmethod
+    def parse_basic_info(el):
+        result = {}
+        try:
+            result['pic'] = el.xpath('//div[@id="item"]/a/img/@src')[0]
+            result['title'] = el.xpath("./div[@class='r_content']/div[@class='title']/text()")[0].encode('latin1')
+        except IndexError:
+            pass
+
+        trs = el.xpath("./div[@class='r_content']/div[@class='list']/table/tr")
+
+        keys = ['avg', 'tel', 'address', 'date', 'payload', 'best_seller']
+
+        for i, tr in enumerate(trs):
+            try:
+                key = keys[i]
+                if key in ['tel', 'address', 'payload', 'best_seller']:
+                    result[key] = tr.xpath('./td')[1].xpath('./text()')[0].encode('latin1')
+                    continue
+                if key == 'date':
+                    result[key] = tr.xpath('./td')[1].xpath('./text()')
+                    continue
+                result[key] = tr.xpath('./td/span/text()')[0].encode('latin1')
+            except IndexError:
+                pass
+
+        return result
+
+    @staticmethod
+    def parse_intro_info(el):
+        result = {}
+        trs = el.xpath('./div[@class="list no_margintop"]/table/tr')
+
+        keys = ['company_intro', 'preferential', 'card_detail', 'parking', 'buss']
+
+        for i, tr in enumerate(trs):
+            try:
+                key = keys[i]
+                if key == 'buss':
+                    result[key] = tr.xpath('./td/div[@class="left"]/text()')[0].encode('latin1')
+                    continue
+                result[key] = tr.xpath('./td')[1].xpath('./text()')[0].encode('latin1')
+            except IndexError:
+                pass
+
+        return result
+
+    @staticmethod
+    def parse_extra_info(el):
+        hs = []
+        hrefs = el.xpath('./div[@class="other"]/a')
+        for href in hrefs:
+            try:
+                hs.append({'link': href.xpath('./@href')[0].encode('latin1'), 'name': href.xpath('./text()')[0].encode('latin1')})
+            except IndexError:
+                pass
+
+        return {'extra': hs}
