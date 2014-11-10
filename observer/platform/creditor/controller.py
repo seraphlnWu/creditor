@@ -24,7 +24,7 @@ from observer.lib.tasks import BaseTask
 from observer.node.controller import ControllerServiceBase
 from observer.platform.creditor.config import SEARCH_TIMEOUT, TASK_QUEUE
 from observer.platform.creditor.utils import check_duplicate, save_extract_ids
-from observer.platform.creditor.models import save_statuses, save_tasks
+from observer.platform.creditor.models import save_statuses, save_tasks, save_items
 from observer.platform.creditor.base_redis import RedisOp
 
 ttype_mapper = {
@@ -91,10 +91,12 @@ class ControllerService(ControllerServiceBase):
             if ttype == 'extract':
                 total_page, hrefs = json.loads(data)
                 total_page = int(total_page)
+                hrefs = json.loads(hrefs)
                 tids = check_duplicate(self.redis, hrefs)
-                save_tasks(self.redis, tids)
+                #save_tasks(self.redis, tids)
                 for h in hrefs:
                     tmp_tid = self.new_task_id()
+                    log.info(h)
                     tmp_tbody = {'task': h}
                     tmp_task = BaseTask(tmp_tid, tmp_tbody)
                     self.redis.push_list_data('task_queue', cPickle.dumps(tmp_task))
@@ -110,7 +112,7 @@ class ControllerService(ControllerServiceBase):
                         self.redis.push_list_data('extract_queue', cPickle.dumps(tmp_task))
 
             else:
-                save_items(data)
+                save_items(json.loads(data))
         else:
             log.debug('Got an invalid task: %s when taking task: %s' % (task, ttype))
 
@@ -159,7 +161,7 @@ class ControllerService(ControllerServiceBase):
     def gotError(self, fail, tid):
         ''' 当出现异常时，将任务重新写入到Redis队列 '''
         log.exception(fail)
-        self.redis.push_list_data(TASK_QUEUE, tid, direct='right')
+        #self.redis.push_list_data(TASK_QUEUE, tid, direct='right')
 
     def clientFail(self, *args, **kwargs):
         ''' called when client failed '''

@@ -1,7 +1,11 @@
 # coding=utf8
 
 import json
+import pymongo
 from datetime import datetime
+
+
+db = pymongo.Connection()['creditor']
 
 
 def parse_html_value(html):
@@ -144,4 +148,9 @@ def save_statuses(statuses):
 def save_tasks(redis_conn, tids):
     ''' '''
     for tid in tids:
-        redis_conn.push_list_data('task_queue', tids)
+        redis_conn.push_list_data('task_queue', tid)
+
+
+def save_items(items):
+    ''' '''
+    db.cmbc.insert(items)
